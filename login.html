@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LearnTogether</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <!-- Navigation Bar -->
+      <nav class="navbar">
+        <div class="nav-left">
+          <button class="menu-btn">
+            <i data-lucide="menu"></i>
+          </button>
+          <a href="/" class="logo">
+            <i data-lucide="graduation-cap"></i>
+            <span>LearnTogether</span>
+          </a>
+        </div>
+        <div class="nav-right">
+          <button class="icon-btn" id="settingsBtn">
+            <i data-lucide="settings"></i>
+          </button>
+          <button class="icon-btn" id="userBtn">
+            <i data-lucide="user"></i>
+          </button>
+        </div>
+      </nav>
+
+      <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-section">
+            <h2>Study Groups</h2>
+            <a href="/create-group.html" class="create-group-btn">Create Group</a>
+          </div>
+
+          <nav class="sidebar-nav" id="groupsList">
+            <!-- Group list will be inserted here -->
+          </nav>
+
+          <div class="sidebar-footer">
+            <a href="/settings.html" class="nav-item">
+              <i data-lucide="settings"></i>
+              <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" id="logoutBtn">
+              <i data-lucide="log-out"></i>
+              <span>Logout</span>
+            </a>
+          </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+          <div class="welcome-section">
+            <h1>Welcome to LearnTogether</h1>
+            <p>Join study groups, share notes, and learn together!</p>
+          </div>
+
+          <!-- Login Form -->
+          <div class="auth-container">
+            <form class="auth-form" id="loginForm">
+              <h2>Login</h2>
+              <div id="errorMessage" class="error-message" style="display: none;"></div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+              </div>
+              <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+              </div>
+              <button type="submit" class="submit-btn">Login</button>
+              <p class="auth-link">
+                Don't have an account? <a href="/register.html">Register</a>
+              </p>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // API URL
+      const API_URL = 'http://localhost:5000/api';
+
+      // Check if user is logged in
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+      if (token && user) {
+        // Redirect to dashboard if already logged in
+        window.location.href = '/dashboard.html';
+      }
+
+      // Mobile menu toggle
+      const menuBtn = document.querySelector('.menu-btn');
+      const sidebar = document.querySelector('.sidebar');
+      
+      menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+      });
+
+      // Handle login form submission
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
+        
+        try {
+          // Clear previous errors
+          errorMessage.style.display = 'none';
+          
+          // Send login request
+          const response = await axios.post(`${API_URL}/auth/login`, {
+            email,
+            password
+          });
+          
+          // Save token and user data
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          // Redirect to dashboard
+          window.location.href = '/dashboard.html';
+        } catch (error) {
+          console.error('Login error:', error);
+          
+          // Display error message
+          errorMessage.textContent = error.response?.data?.message || 'Login failed. Please try again.';
+          errorMessage.style.display = 'block';
+        }
+      });
+
+      // Handle logout
+      document.getElementById('logoutBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // Clear local storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Redirect to login page
+        window.location.href = '/';
+      });
+    </script>
+
+    <style>
+      .error-message {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        text-align: center;
+      }
+    </style>
+  </body>
+</html>

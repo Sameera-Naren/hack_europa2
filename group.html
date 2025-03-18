@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Group - LearnTogether</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.date-fns.org/v3.3.1/date-fns.min.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <nav class="navbar">
+        <div class="nav-left">
+          <a href="/" class="logo">
+            <i data-lucide="graduation-cap"></i>
+            <span>LearnTogether</span>
+          </a>
+          <h2 id="groupName" class="group-title"></h2>
+        </div>
+        <div class="nav-right">
+          <button class="icon-btn" id="membersToggle">
+            <i data-lucide="users"></i>
+          </button>
+        </div>
+      </nav>
+
+      <div class="main-container">
+        <main class="chat-container">
+          <div class="messages" id="messages"></div>
+          <div class="message-input">
+            <form id="messageForm">
+              <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Type a message..." 
+                required
+              >
+              <button type="submit" class="send-btn">
+                <i data-lucide="send"></i>
+              </button>
+            </form>
+          </div>
+        </main>
+
+        <aside class="members-sidebar" id="membersSidebar">
+          <div class="members-header">
+            <h3>Members</h3>
+            <span id="memberCount">0</span>
+          </div>
+          <div class="members-list" id="membersList"></div>
+        </aside>
+      </div>
+    </div>
+
+    <script type="module">
+      import { nanoid } from 'https://esm.sh/nanoid@5.0.6'
+
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      // Get group ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const groupId = urlParams.get('id');
+
+      // Get group data
+      const groups = JSON.parse(localStorage.getItem('studyGroups') || '[]');
+      const group = groups.find(g => g.id === groupId);
+
+      if (!group) {
+        window.location.href = '/';
+      }
+
+      // Initialize messages if not exists
+      if (!group.messages) {
+        group.messages = [];
+      }
+
+      // Set group name
+      document.getElementById('groupName').textContent = group.name;
+
+      // Toggle members sidebar
+      document.getElementById('membersToggle').addEventListener('click', () => {
+        document.getElementById('membersSidebar').classList.toggle('active');
+      });
+
+      // Update members list
+      function updateMembers() {
+        const membersList = document.getElementById('membersList');
+        const memberCount = document.getElementById('memberCount');
+        
+        membersList.innerHTML = '';
+        memberCount.textContent = group.members.length;
+
+        group.members.forEach(member => {
+          const memberEl = document.createElement('div');
+          memberEl.className = 'member-item';
+          memberEl.innerHTML = `
+            <i data-lucide="user"></i>
+            <span>Member ${member.id.slice(0, 4)}</span>
+            <span class="member-joined">Joined ${dateFns.formatDistanceToNow(new Date(member.joinedAt))} ago</span>
+          `;
+          membersList.appendChild(memberEl);
+        });
+
+        lucide.createIcons();
+      }
+
+      // Update messages
+      function updateMessages() {
+        const messagesContainer = document.getElementById('messages');
+        messagesContainer.innerHTML = '';
+
+        group.messages.forEach(msg => {
+          const messageEl = document.createElement('div');
+          messageEl.className = 'message';
+          messageEl.innerHTML = `
+            <div class="message-header">
+              <span class="message-author">Member ${msg.memberId.slice(0, 4)}</span>
+              <span class="message-time">${dateFns.formatDistanceToNow(new Date(msg.timestamp))} ago</span>
+            </div>
+            <div class="message-content">${msg.content}</div>
+          `;
+          messagesContainer.appendChild(messageEl);
+        });
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      // Handle new messages
+      document.getElementById('messageForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const input = document.getElementById('messageInput');
+        const content = input.value.trim();
+        
+        if (content) {
+          const message = {
+            id: nanoid(),
+            memberId: group.members[0].id, // Using first member as current user
+            content,
+            timestamp: new Date().toISOString()
+          };
+
+          group.messages.push(message);
+          localStorage.setItem('studyGroups', JSON.stringify(groups));
+          
+          input.value = '';
+          updateMessages();
+        }
+      });
+
+      // Initial render
+      updateMembers();
+      updateMessages();
+    </script>
+
+    <style>
+      .group-title {
+        color: white;
+        margin-left: 1rem;
+        font-size: 1.25rem;
+      }
+
+      .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #313338;
+        position: relative;
+      }
+
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .message {
+        background-color: #2b2d31;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .message-author {
+        font-weight: 600;
+        color: #5865F2;
+      }
+
+      .message-time {
+        color: #9ca3af;
+        font-size: 0.875rem;
+      }
+
+      .message-content {
+        color: #dcddde;
+        line-height: 1.4;
+      }
+
+      .message-input {
+        padding: 1rem;
+        background-color: #313338;
+        border-top: 1px solid #1e1f22;
+      }
+
+      .message-input form {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .message-input input {
+        flex: 1;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 0.5rem;
+        background-color: #383a40;
+        color: white;
+      }
+
+      .message-input input:focus {
+        outline: none;
+        background-color: #404249;
+      }
+
+      .send-btn {
+        background-color: #5865F2;
+        color: white;
+        border: none;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .send-btn:hover {
+        background-color: #4752c4;
+      }
+
+      .members-sidebar {
+        width: 240px;
+        background-color: #2b2d31;
+        border-left: 1px solid #1e1f22;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .members-header {
+        padding: 1rem;
+        border-bottom: 1px solid #1e1f22;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .members-header h3 {
+        color: #dcddde;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .members-header span {
+        background-color: #383a40;
+        color: #dcddde;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+      }
+
+      .members-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+
+      .member-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        color: #dcddde;
+        transition: all 0.2s ease;
+      }
+
+      .member-item:hover {
+        background-color: #383a40;
+      }
+
+      .member-joined {
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: #9ca3af;
+      }
+
+      @media (max-width: 768px) {
+        .members-sidebar {
+          position: fixed;
+          right: -240px;
+          height: calc(100% - 3.5rem);
+          transition: right 0.3s ease;
+        }
+
+        .members-sidebar.active {
+          right: 0;
+        }
+      }
+    </style>
+  </body>
+</html>
